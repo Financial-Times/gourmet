@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/Financial-Times/gourmet/structloader"
 )
 
 func setVars(vars map[string]string) {
@@ -127,7 +129,10 @@ func TestConfigCreate(t *testing.T) {
 			setVars(test.envVars)
 			defer clearVars(test.envVars)
 
-			confLoader := NewLoader(&EnvConfigProvider{})
+			confLoader := structloader.New(
+				&EnvConfigProvider{},
+				structloader.WithLoaderTagName("conf"),
+			)
 			err := confLoader.Load(test.conf)
 
 			if err != nil {

@@ -1,4 +1,4 @@
-package config
+package structloader
 
 import (
 	"fmt"
@@ -6,19 +6,24 @@ import (
 	"strconv"
 )
 
-// Loader - service that loads configuration in struct
+// Loader - service that loads data into struct based on rules specified in tag
 type Loader struct {
 	dataProvider Provider
+	opts         loaderOptions
 }
 
-// NewLoader - create new ConfigLoader service
-func NewLoader(dp Provider) *Loader {
+// New - create new Loader
+func New(dp Provider, opts ...LoaderOption) *Loader {
+	options := newLoaderOptions()
+	options.applyOptions(opts...)
+
 	return &Loader{
 		dataProvider: dp,
+		opts:         *options,
 	}
 }
 
-// Load - fetches data from configuration provider and fills it in a struct
+// Load - fetches values from data provider and fills them in a struct
 func (l *Loader) Load(i interface{}) error {
 	v := reflect.ValueOf(i)
 
@@ -48,9 +53,9 @@ func (l *Loader) process(v reflect.Value, f reflect.StructField) error {
 		return nil
 	}
 
-	confKey, ok := f.Tag.Lookup("conf")
+	confKey, ok := f.Tag.Lookup(l.opts.loaderTagName)
 	if !ok {
-		// if there is no "conf" tag, just skip it
+		// if there is no tag that we are looking for, just skip it
 		return nil
 	}
 
@@ -58,21 +63,21 @@ func (l *Loader) process(v reflect.Value, f reflect.StructField) error {
 		return fmt.Errorf("field '%s' cannot be set", f.Name)
 	}
 
-	val, err := l.getConfigValue(confKey, f)
+	val, err := l.getValue(confKey, f)
 	if err != nil {
-		return fmt.Errorf("could not retrieve config value: %w", err)
+		return fmt.Errorf("could not retrieve value: %w", err)
 	}
 
-	requiredVal, required := f.Tag.Lookup("required")
+	requiredVal, required := f.Tag.Lookup(l.opts.requiredTagName)
 	if val == "" {
 		if required && requiredVal == "true" {
 			return fmt.Errorf("%s is required, but is not set", confKey)
 		}
-		// conf is not required and is not set - nothing to do
+		// if it is not required and is not set - nothing to do
 		return nil
 	}
 
-	err = setConfigValue(v, f.Name, val)
+	err = setValue(v, f.Name, val)
 	if err != nil {
 		return fmt.Errorf("could not set value: %w", err)
 	}
@@ -80,21 +85,20 @@ func (l *Loader) process(v reflect.Value, f reflect.StructField) error {
 	return nil
 }
 
-func (l *Loader) getConfigValue(key string, f reflect.StructField) (string, error) {
+func (l *Loader) getValue(key string, f reflect.StructField) (string, error) {
 	newVal, err := l.dataProvider.Get(key)
-	if err != nil && err != ErrConfigValNotFound {
-		return "", fmt.Errorf("error loading config '%s': %w", key, err)
+	if err != nil && err != ErrValNotFound {
+		return "", fmt.Errorf("error loading value for '%s': %w", key, err)
 	}
 
-	defaultVal, defaultExists := f.Tag.Lookup("default")
-
+	defaultVal, defaultExists := f.Tag.Lookup(l.opts.defaultTagName)
 	if newVal == "" && defaultExists {
 		newVal = defaultVal
 	}
 	return newVal, nil
 }
 
-func setConfigValue(v reflect.Value, fieldName string, newVal string) error {
+func setValue(v reflect.Value, fieldName string, newVal string) error {
 	switch v.Type().Kind() {
 	case reflect.String:
 		v.SetString(newVal)
