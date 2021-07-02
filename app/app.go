@@ -2,9 +2,6 @@ package app
 
 import (
 	"context"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 // Lifecycle -
@@ -16,7 +13,8 @@ type Lifecycle struct {
 // App -
 type App struct {
 	Name       string
-	Lifecycles []Lifecycle
+	lifecycles []Lifecycle
+	terminator Terminator
 	// @todo - make timeouts configurable via options
 	startTimeout int
 	stopTimeout  int
@@ -24,16 +22,21 @@ type App struct {
 }
 
 // New - creates new Application
-func New(name string, lcs []Lifecycle) *App {
+func New(name string, lcs []Lifecycle, opts ...Option) *App {
+	options := newDefaultOptions()
+	for _, opt := range opts {
+		opt(options)
+	}
 	return &App{
 		Name:       name,
-		Lifecycles: lcs,
+		lifecycles: lcs,
+		terminator: options.terminator,
 	}
 }
 
 // Start -
 func (a *App) Start(ctx context.Context) error {
-	for _, l := range a.Lifecycles {
+	for _, l := range a.lifecycles {
 		if l.OnStart == nil {
 			continue
 		}
@@ -48,7 +51,7 @@ func (a *App) Start(ctx context.Context) error {
 // Stop -
 func (a *App) Stop(ctx context.Context) error {
 	// @todo - stop in reverse order
-	for _, l := range a.Lifecycles {
+	for _, l := range a.lifecycles {
 		if l.OnStop == nil {
 			continue
 		}
@@ -68,18 +71,13 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 
-	waitForTermination()
+	done := make(chan struct{}, 1)
+	a.terminator(done)
+	<-done
 
 	err = a.Stop(ctx)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func waitForTermination() {
-	ch := make(chan os.Signal, 1)
-	// @todo - make configureable what is considered termination signal
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	<-ch
 }
