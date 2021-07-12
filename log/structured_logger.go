@@ -3,67 +3,70 @@ package log
 import (
 	"os"
 
-	kitlog "github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	"github.com/rs/zerolog"
 )
 
 type StructuredLogger struct {
-	kitlog.Logger
-	keyConf *KeyNamesConfig
+	logger zerolog.Logger
+	logEvent *Event
+	ref *Logger
 }
 
-func NewStructuredLogger(logLevel Level, customLogKeyConf ...*KeyNamesConfig) StructuredLogger {
-	var rawLogLevel level.Option
+func NewStructuredLogger(logLevel Level) *StructuredLogger {
+	var rawLogLevel zerolog.Level
 	switch logLevel {
-	case Debug:
-		rawLogLevel = level.AllowDebug()
-	case Warn:
-		rawLogLevel = level.AllowWarn()
-	case Error:
-		rawLogLevel = level.AllowError()
+	case TraceLevel:
+		rawLogLevel = zerolog.TraceLevel
+	case DebugLevel:
+		rawLogLevel = zerolog.DebugLevel
+	case WarnLevel:
+		rawLogLevel = zerolog.WarnLevel
+	case ErrorLevel:
+		rawLogLevel = zerolog.ErrorLevel
 	default:
-		rawLogLevel = level.AllowInfo()
+		rawLogLevel = zerolog.InfoLevel
 	}
 
-	logger := kitlog.NewJSONLogger(os.Stdout)
-	logger = level.NewFilter(logger, rawLogLevel)
+	logger := zerolog.New(os.Stdout).Level(rawLogLevel).With().
+		Timestamp().Caller().
+		Logger()
 
-	keyConf := NewDefaultKeyNamesConfig()
-	if len(customLogKeyConf) > 0 {
-		keyConf = NewKeyNamesConfig(customLogKeyConf[0])
-	}
-	logger = kitlog.With(logger, keyConf.KeyTime, kitlog.DefaultTimestampUTC)
-	logger = kitlog.With(logger, keyConf.KeyCaller, kitlog.DefaultCaller)
-	return StructuredLogger{
-		keyConf: keyConf,
+	return &StructuredLogger{
+		logger: logger,
+		logEvent: NewLogEvent(),
 	}
 }
 
-func (s *StructuredLogger) Debug(keyVals ...interface{}) {
-	keyVals = s.appendMessageKeyIfNeeded(keyVals)
-	_ = level.Debug(s).Log(keyVals)
+func (s *StructuredLogger) WithField(key string, val interface{}) *StructuredLogger {
+	s.logEvent.Put(key, val)
+	return s
 }
 
-func (s *StructuredLogger) Info(keyVals ...interface{}) {
-	keyVals = s.appendMessageKeyIfNeeded(keyVals)
-	_ = level.Info(s).Log(keyVals)
+func (s *StructuredLogger) Trace(message string, args ...interface{}) {
+	s.log(s.logger.Trace(), message, args)
 }
 
-func (s *StructuredLogger) Warn(keyVals ...interface{}) {
-	keyVals = s.appendMessageKeyIfNeeded(keyVals)
-	_ = level.Warn(s).Log(keyVals)
+func (s *StructuredLogger) Debug(message string, args ...interface{}) {
+	s.log(s.logger.Debug(), message, args)
 }
 
-func (s *StructuredLogger) Error(keyVals ...interface{}) {
-	keyVals = s.appendMessageKeyIfNeeded(keyVals)
-	_ = level.Error(s).Log(keyVals)
+func (s *StructuredLogger) Info(message string, args ...interface{}) {
+	s.log(s.logger.Info(), message, args)
 }
 
-func (s *StructuredLogger) appendMessageKeyIfNeeded(keyVals ...interface{}) []interface{} {
-	if len(keyVals) == 1 {
-		keyVals = append(keyVals, 0)
-		copy(keyVals[1:], keyVals)
-		keyVals[0] = s.keyConf.KeyMessage
+func (s *StructuredLogger) Warn(message string, args ...interface{}) {
+	s.log(s.logger.Warn(), message, args)
+}
+
+func (s *StructuredLogger) Error(message string, args ...interface{}) {
+	s.log(s.logger.Error(), message, args)
+}
+
+func (s *StructuredLogger) log(logEvent *zerolog.Event, message string, args []interface{}) {
+	fields := s.logEvent.Fields()
+	if len(fields) > 0 {
+		logEvent = logEvent.Fields(fields)
 	}
-	return keyVals
+	logEvent.Fields(fields).Msgf(message, args)
+	s.logEvent.Clear()
 }

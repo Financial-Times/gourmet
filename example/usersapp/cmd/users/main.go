@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Financial-Times/gourmet/example/usersapp/pkg/storage"
 	"github.com/Financial-Times/gourmet/example/usersapp/pkg/users"
-	"github.com/go-kit/kit/log"
+	"github.com/Financial-Times/gourmet/log"
 	"github.com/gorilla/mux"
 	"net/http"
 	"os"
@@ -38,13 +38,14 @@ func main() {
 		panic(err)
 	}
 
-	logger := log.NewLogfmtLogger(os.Stdout)
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
-	logger = log.With(logger, "caller", log.DefaultCaller)
-
+	sLog := log.NewStructuredLogger(log.InfoLevel)
+	logger := log.NewFluentLogger(sLog)
+	logger.WithServiceName("")
 	r := mux.NewRouter()
+	repo := users.NewUserRepository(*db)
+	service := users.NewUserService(repo)
+	r = users.MakeHTTPHandler(r, service, sLog)
 
-	r = initUsersHandler(r, db, logger)
 
 	errs := make(chan error)
 	go func() {
@@ -54,15 +55,10 @@ func main() {
 	}()
 
 	go func() {
-		logger.Log("transport", "HTTP", "addr", *httpAddr)
+		logger.Info("transport", "HTTP", "addr", *httpAddr)
 		errs <- http.ListenAndServe(*httpAddr, r)
 	}()
 
-	logger.Log("exit", <-errs)
+	logger.Info("exit", <-errs)
 }
 
-func initUsersHandler(router *mux.Router, db *storage.Persistence, logger log.Logger) *mux.Router {
-	r := users.NewUserRepository(*db)
-	s := users.NewUserService(r)
-	return users.MakeHTTPHandler(router, s, logger)
-}
