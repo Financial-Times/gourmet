@@ -16,16 +16,8 @@ func main() {
 		fmt.Fprintf(w, "Hello, Kiro")
 	})
 
-	a := app.New("myApp", []app.Lifecycle{
-		{
-			OnStart: func(_ context.Context) error {
-				go srv.ListenAndServe()
-				return nil
-			},
-			OnStop: func(ctx context.Context) error {
-				return srv.Shutdown(ctx)
-			},
-		},
+	a := app.New([]app.Lifecycle{
+		&HTTPServerLifecycle{srv},
 	})
 
 	startCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -34,4 +26,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+}
+
+type HTTPServerLifecycle struct {
+	srv *http.Server
+}
+
+func (l *HTTPServerLifecycle) OnStart(ctx context.Context) error {
+	go l.srv.ListenAndServe()
+	return nil
+}
+
+func (l *HTTPServerLifecycle) OnStop(ctx context.Context) error {
+	return l.srv.Shutdown(ctx)
 }
