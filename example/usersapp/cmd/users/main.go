@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Financial-Times/gourmet/example/usersapp/pkg/storage"
 	"github.com/Financial-Times/gourmet/example/usersapp/pkg/users"
-	"github.com/Financial-Times/gourmet/log"
+	"github.com/Financial-Times/gourmet/gmlog"
 	"github.com/gorilla/mux"
 	"net/http"
 	"os"
@@ -33,18 +33,17 @@ func main() {
 	)
 	flag.Parse()
 
-	db, err := storage.NewDB("reservations")
+	db, err := storage.NewDB("users")
 	if err != nil {
 		panic(err)
 	}
 
-	sLog := log.NewStructuredLogger(log.InfoLevel)
-	logger := log.NewFluentLogger(sLog)
-	logger.WithServiceName("")
+	logger := gmlog.NewStructuredLogger(gmlog.InfoLevel)
+
 	r := mux.NewRouter()
 	repo := users.NewUserRepository(*db)
 	service := users.NewUserService(repo)
-	r = users.MakeHTTPHandler(r, service, sLog)
+	r = users.MakeHTTPHandler(r, service, logger)
 
 
 	errs := make(chan error)
@@ -55,10 +54,10 @@ func main() {
 	}()
 
 	go func() {
-		logger.Info("transport", "HTTP", "addr", *httpAddr)
+		//logger.Info("transport", "HTTP", "addr", *httpAddr)
 		errs <- http.ListenAndServe(*httpAddr, r)
 	}()
 
-	logger.Info("exit", <-errs)
+	//logger.Info("exit", <-errs)
 }
 

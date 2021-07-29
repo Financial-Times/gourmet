@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/Financial-Times/gourmet/apperror"
-	"github.com/Financial-Times/gourmet/log"
+	"github.com/Financial-Times/gourmet/gmlog"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
 
 type ServerWrapper struct {
 	Name           string
 	Port           string
-	log            log.Logger
+	log            gmlog.Logger
 	serverInstance *http.Server
 }
 
@@ -22,7 +22,7 @@ type Handler struct {
 	Path        string
 }
 
-func NewHTTPServer(name string, port string, log log.Logger, handlers ...Handler) *ServerWrapper {
+func NewHTTPServer(name string, port string, log gmlog.Logger, handlers ...Handler) *ServerWrapper {
 	serveMux := http.NewServeMux()
 	for _, h := range handlers {
 		serveMux.HandleFunc(h.Path, h.HandlerFunc)
@@ -39,30 +39,30 @@ func NewHTTPServer(name string, port string, log log.Logger, handlers ...Handler
 func (s *ServerWrapper) Start() {
 	go func() {
 		if err := s.serverInstance.ListenAndServe(); err != nil {
-			s.log.Info("HTTP server closing with message: %v", err)
+			//s.gmlog.Info("HTTP server closing with message: %v", err)
 		}
 	}()
-	s.log.Info("[Start] %s HTTP server on port %s started\n", s.Name, s.Port)
+	//s.gmlog.Info("[Start] %s HTTP server on port %s started\n", s.Name, s.Port)
 }
 
 func (s *ServerWrapper) Shutdown() {
-	s.log.Info("[Shutdown] %s HTTP server is shutting down\n", s.Name)
+	//s.gmlog.Info("[Shutdown] %s HTTP server is shutting down\n", s.Name)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := s.serverInstance.Shutdown(ctx); err != nil {
-		s.log.Error("Unable to stop HTTP server: %v", err)
+		//s.gmlog.Error("Unable to stop HTTP server: %v", err)
 	}
 }
 
-func RequestFinalizerFunc(logger *log.HTTPLogger) httptransport.ServerFinalizerFunc {
+func RequestFinalizerFunc(logger gmlog.Logger) httptransport.ServerFinalizerFunc {
 	return func(ctx context.Context, code int, r *http.Request) {
-		logger.WithRequest(r).WithStatusCode(code).Info("Response log")
+		logger.Info("Response gmlog", gmlog.WithRequest(r), gmlog.WithStatusCode(code))
 	}
 }
 
-func DefaultServerOptions(logger *log.HTTPLogger) []httptransport.ServerOption {
+func DefaultServerOptions(logger gmlog.Logger) []httptransport.ServerOption {
 	return []httptransport.ServerOption{
 		// TODO: This has to implemented
 		// httptransport.ServerErrorHandler(transport.NewLogErrorHandler(logger)),

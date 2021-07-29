@@ -3,15 +3,12 @@ package storage
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
-
 	"github.com/Financial-Times/gourmet/apperror"
 	"github.com/doug-martin/goqu/v7"
 	_ "github.com/doug-martin/goqu/v7/dialect/sqlite3"
 	"github.com/doug-martin/goqu/v7/exec"
 	_ "github.com/mattn/go-sqlite3"
+	"os"
 )
 
 type Persistence struct {
@@ -73,18 +70,18 @@ func fileExists(filename string) bool {
 }
 
 func createSchema(db *sql.DB, dbName string) error {
-	file, err := ioutil.ReadFile("sql/reservations.sql")
-	if err != nil {
-		return apperror.DBError.Wrapf(err, "error initializing %s database model", dbName)
-	}
-
-	queries := strings.Split(string(file), ";\n")
-	for _, q := range queries {
-		_, err := db.Exec(q)
-		if err != nil {
-			return apperror.DBError.Wrapf(err, "error executing DDL query: %s", q)
-		}
-	}
+	//file, err := ioutil.ReadFile("./sql/users.sql")
+	//if err != nil {
+	//	return apperror.DBError.Wrapf(err, "error initializing %s database model", dbName)
+	//}
+	//
+	//queries := strings.Split(string(file), ";\n")
+	//for _, q := range queries {
+	//	_, err := db.Exec(q)
+	//	if err != nil {
+	//		return apperror.DBError.Wrapf(err, "error executing DDL query: %s", q)
+	//	}
+	//}
 
 	return nil
 }

@@ -5,17 +5,16 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Financial-Times/gourmet/log"
+	"github.com/Financial-Times/gourmet/gmlog"
 	gourmethttp "github.com/Financial-Times/gourmet/transport/http"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 )
 
-func MakeHTTPHandler(r *mux.Router, s Service, logger *log.Logger) *mux.Router {
+func MakeHTTPHandler(r *mux.Router, s Service, logger gmlog.Logger) *mux.Router {
 	e := MakeServerEndpoints(s)
 
-	httpLog := log.NewHTTPStructuredLogger(logger)
-	options := gourmethttp.DefaultServerOptions(httpLog.)
+	options := gourmethttp.DefaultServerOptions(logger)
 
 	r.Methods("POST").Path("/user").
 		Handler(httptransport.NewServer(
