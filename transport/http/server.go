@@ -5,8 +5,6 @@ import (
 
 	"fmt"
 	"time"
-
-	"github.com/gorilla/mux"
 )
 
 type serverConfig struct {
@@ -71,25 +69,18 @@ func newServerDefaultConfig() *serverConfig {
 	}
 }
 
-// RoutesRegistrant - you can pass this function to register routes in the services router
-type RoutesRegistrant func(router *mux.Router)
-
 // Server - Default Server with some defaults
 type Server struct {
 	srv *http.Server
 }
 
 // New - create new Server with specified options
-func New(registrant RoutesRegistrant, options ...Option) *Server {
+func New(handler http.Handler, options ...Option) *Server {
 	config := newServerDefaultConfig()
 	config.ApplyOptions(options...)
 
 	serveMux := http.NewServeMux()
-
-	router := mux.NewRouter()
-	if registrant != nil {
-		registrant(router)
-	}
+	serveMux.Handle("/", handler)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", config.appPort),
@@ -98,6 +89,7 @@ func New(registrant RoutesRegistrant, options ...Option) *Server {
 		WriteTimeout: time.Duration(config.writeTimeout) * time.Second,
 		IdleTimeout:  time.Duration(config.idleTimeout) * time.Second,
 	}
+
 	return &Server{srv}
 }
 

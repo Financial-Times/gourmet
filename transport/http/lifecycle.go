@@ -1,6 +1,8 @@
 package http
 
-import "context"
+import (
+	"context"
+)
 
 type ServerLifecycle struct {
 	srv *Server
