@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 
 	"github.com/Financial-Times/gourmet/structloader"
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -30,12 +31,14 @@ func DecodeRequestFromQueryParameters(req interface{}) httptransport.DecodeReque
 			structloader.WithLoaderTagName("query"),
 		)
 
-		err := loader.Load(req)
+		// clone the empty struct without its values
+		newReq := reflect.New(reflect.TypeOf(req).Elem())
+		err := loader.Load(newReq.Interface())
 		if err != nil {
 			return nil, fmt.Errorf("error decoding request: %w", err)
 		}
 
-		return req, nil
+		return newReq, nil
 	}
 }
 
