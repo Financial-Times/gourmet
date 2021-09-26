@@ -26,8 +26,11 @@ func NewStructuredLogger(logLevel Level, args ...Field) *StructuredLogger {
 		rawLogLevel = zerolog.InfoLevel
 	}
 
-	logger := zerolog.New(os.Stdout).Level(rawLogLevel).With().
-		Timestamp().Caller().
+	logger := zerolog.New(os.Stdout).
+		Level(rawLogLevel).
+		With().
+		Timestamp().
+		CallerWithSkipFrameCount(4).
 		Logger()
 
 	return &StructuredLogger{
