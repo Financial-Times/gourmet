@@ -22,37 +22,24 @@ func (p *DotEnvFileConfigProvider) Get(key string) (string, error) {
 }
 
 func NewDotEnvFileConfigProvider(filePath string) (*DotEnvFileConfigProvider, error) {
-	p := &DotEnvFileConfigProvider{
-		data: make(map[string]string, 0),
-	}
-
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read file %s: %w", filePath, err)
 	}
 	lines := strings.Split(string(data), "\n")
+
+	p := &DotEnvFileConfigProvider{data: make(map[string]string, 0)}
 	for i, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		k := ""
-		v := ""
-		delimiterFound := false
-		for _, r := range line {
-			l := string(r)
-			if l == "=" {
-				delimiterFound = true
-				continue
-			}
-			if !delimiterFound {
-				k = fmt.Sprintf("%s%s", k, l)
-				continue
-			}
-			v = fmt.Sprintf("%s%s", v, l)
-		}
-		if !delimiterFound {
+
+		pos := strings.Index(line, "=")
+		if pos == -1 {
 			return nil, fmt.Errorf("malformed config file at line %d", i+1)
 		}
+		k := line[0:pos]
+		v := line[pos+1:]
 		p.data[k] = v
 
 	}

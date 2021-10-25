@@ -23,7 +23,7 @@ type appConfig struct {
 
 func main() {
 	confLoader := config.NewEnvConfigLoader()
-	//confLoader := config.NewDotEnvFileConfigLoader(".env")
+	//confLoader, _ := config.NewDotEnvFileConfigLoader(".env")
 	conf := appConfig{}
 	err := confLoader.Load(&conf)
 	fmt.Printf("%+v\n", err)
