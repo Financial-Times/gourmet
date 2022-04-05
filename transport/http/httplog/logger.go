@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Financial-Times/gourmet/log"
+	"github.com/gotha/gourmet/log"
 )
 
 type HTTPRequestLogger struct {

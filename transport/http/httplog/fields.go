@@ -3,7 +3,7 @@ package httplog
 import (
 	"net/http"
 
-	"github.com/Financial-Times/gourmet/log"
+	"github.com/gotha/gourmet/log"
 )
 
 func WithRequestFields(r *http.Request) []log.Field {

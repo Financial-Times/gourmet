@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Financial-Times/gourmet/structloader"
+	"github.com/gotha/gourmet/structloader"
 )
 
 func setVars(vars map[string]string) {

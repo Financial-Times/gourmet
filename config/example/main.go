@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Financial-Times/gourmet/config"
+	"github.com/gotha/gourmet/config"
 )
 
 type appConfig struct {

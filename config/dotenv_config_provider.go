@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Financial-Times/gourmet/structloader"
+	"github.com/gotha/gourmet/structloader"
 )
 
 type DotEnvFileConfigProvider struct {

@@ -1,4 +1,4 @@
-module github.com/Financial-Times/gourmet
+module github.com/gotha/gourmet
 
 go 1.16
 

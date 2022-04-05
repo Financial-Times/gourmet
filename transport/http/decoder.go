@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/Financial-Times/gourmet/structloader"
 	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/gotha/gourmet/structloader"
 )
 
 type queryParamsDataProvider struct {

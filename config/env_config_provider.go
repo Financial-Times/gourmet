@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 
-	"github.com/Financial-Times/gourmet/structloader"
+	"github.com/gotha/gourmet/structloader"
 )
 
 // EnvConfigProvider - configuration data provider that loads values from env

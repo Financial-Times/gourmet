@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Financial-Times/gourmet/log"
+	"github.com/gotha/gourmet/log"
 )
 
 func main() {

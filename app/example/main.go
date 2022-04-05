@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Financial-Times/gourmet/app"
+	"github.com/gotha/gourmet/app"
 )
 
 func main() {
