@@ -4,39 +4,56 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
-	"github.com/go-kit/kit/endpoint"
 )
 
-// EncodeJSONResponse is the common method to encode all response types to the
+// JSONResponseEncoder is the common method to encode all response types to the
 // client. Since we're using JSON, there's no reason to provide anything more specific.
 // There is also the option to specialize on a per-response (per-method) basis.
-func EncodeJSONResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	e, ok := response.(endpoint.Failer)
-	if ok {
-		resErr := e.Failed()
-		if resErr != nil {
-			// Not a Go kit transport error, but a business-logic error.
-			// Provide those as HTTP errors.
-			EncodeError(ctx, resErr, w)
-			return nil
-		}
-	}
+func JSONResponseEncoder(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	return json.NewEncoder(w).Encode(response)
 }
 
-func EncodeError(_ context.Context, err error, w http.ResponseWriter) {
-	if err == nil {
-		panic("encodeError with nil error")
-	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	// todo - we can try to infer the status code from application specific err
-	w.WriteHeader(500)
+func VoidResponseEncoder(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+	return nil
+}
 
-	if e := json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": err,
-	}); e != nil {
-		panic(err)
+type StatusCodeResolver func(err interface{}) int
+
+type ErrorJSONEncoder struct {
+	statusCodeResolver StatusCodeResolver
+}
+
+type ErrorJSONEncoderOption func(enc *ErrorJSONEncoder)
+
+func WithStatusCodeResolver(fn StatusCodeResolver) ErrorJSONEncoderOption {
+	return func(enc *ErrorJSONEncoder) {
+		enc.statusCodeResolver = fn
 	}
+}
+
+func NewErrorJSONEncoder(options ...ErrorJSONEncoderOption) *ErrorJSONEncoder {
+	enc := &ErrorJSONEncoder{}
+
+	for _, opt := range options {
+		opt(enc)
+	}
+
+	if enc.statusCodeResolver == nil {
+		enc.statusCodeResolver = func(_ interface{}) int {
+			return http.StatusInternalServerError
+		}
+	}
+
+	return enc
+}
+
+func (e *ErrorJSONEncoder) Encode(ctx context.Context, err error, w http.ResponseWriter) {
+	resp := map[string]string{"error": err.Error()}
+	jsonResp, _ := json.Marshal(resp)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	statusCode := e.statusCodeResolver(err)
+	w.WriteHeader(statusCode)
+	w.Write(jsonResp)
 }
