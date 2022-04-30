@@ -9,6 +9,7 @@ import (
 func main() {
 
 	logger := log.NewStructuredLogger(log.InfoLevel)
+	//logger := log.NewStructuredLogger(log.LogLevelFromKeyword("debug"))
 
 	logger.Info("this is my test log",
 		log.WithField("transaction_id", "tid_gosho1"),
